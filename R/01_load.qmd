@@ -43,7 +43,10 @@ write_csv(x = donor_metadata,
 #### (Pilar)
 
 ```{r}
+prot_data <- read_csv("https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorMetric,rma::options[num_rows$eqall]")
 
+write_csv(x = prot_data,
+          file = str_c(raw_data_dir, "/prot_data.csv"))
 ```
 
 ## RNA-Seq Data
