@@ -54,5 +54,14 @@ write_csv(x = prot_data,
 #### (Teo)
 
 ```{r}
+url <- "https://aging.brain-map.org/api/v2/well_known_file_download/502999992"
+rnaseq.zip <- file.path(raw_data_dir, "rnaseq.zip")
 
+options(timeout=300)
+if (!file.exists(rnaseq.zip)){
+  download.file(url, destfile = rnaseq.zip, mode = "wb")
+}
+unzip(rnaseq.zip, exdir = raw_data_dir)
+
+fpkm_normalized <- read_csv(here("data", "_raw", "fpkm_table_normalized.csv"))
 ```
