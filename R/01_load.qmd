@@ -3,7 +3,31 @@ title: "01_load"
 format: html
 ---
 
+## Library Loading
+
+```{r}
+library("here")
+library("tidyverse")
+```
+
+## Data Folder
+
+```{r}
+data_dir <- here("data")
+raw_data_dir <- here("data/_raw")
+
+if (!dir.exists(data_dir)) {
+  dir.create(data_dir)
+}
+
+if (!dir.exists(raw_data_dir)) {
+  dir.create(raw_data_dir)
+}
+```
+
 ## Donor Metadata
+
+#### (Roke)
 
 ```{r}
 
@@ -11,11 +35,18 @@ format: html
 
 ## Protein Data
 
-```{r}
+#### (Pilar)
 
+```{r}
+prot_data <- read_csv("https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorMetric,rma::options[num_rows$eqall]")
+
+write_csv(x = prot_data,
+          file = str_c(raw_data_dir, "/prot_data.csv"))
 ```
 
 ## RNA-Seq Data
+
+#### (Teo)
 
 ```{r}
 
