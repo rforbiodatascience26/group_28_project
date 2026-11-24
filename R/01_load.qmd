@@ -26,21 +26,25 @@ if (!dir.exists(raw_data_dir)) {
 ```
 
 ## Donor Metadata
-# (Roke)
+
+#### (Roke)
 
 ```{r}
 
 ```
 
 ## Protein Data
-# (Pilar)
+
+#### (Pilar)
 
 ```{r}
 
 ```
 
 ## RNA-Seq Data
-# (Teo)
+
+#### (Teo)
+
 ```{r}
 
 ```
