@@ -35,7 +35,7 @@ url <- "https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbi
 donor_metadata <- read_csv(url)
 
 write_csv(x = donor_metadata,
-          file = str_c(raw_data_dir, "donor_metadata.csv"))
+          file = str_c(raw_data_dir, "/donor_metadata.csv"))
 ```
 
 ## Protein Data
