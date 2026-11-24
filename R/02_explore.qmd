@@ -1,0 +1,23 @@
+---
+title: "02_explore"
+format: html
+---
+
+## Library Loading
+
+```{r}
+library("here")
+library("tidyverse")
+```
+
+## Exploring Donor Metadata
+
+#### (Roke)
+
+## Protein Data
+
+#### (Pilar)
+
+## RNA-Seq Data
+
+#### (Teo)
