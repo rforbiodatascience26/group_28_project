@@ -1,5 +1,5 @@
 ---
-title: "02_clean"
+title: "03_clean"
 format: html
 ---
 
@@ -10,7 +10,40 @@ library("here")
 library("tidyverse")
 ```
 
+Data paths:
+
+```{r}
+data_dir <- here("data")
+raw_dir <- here("data/_raw")
+```
+
 ## Donor Metadata
+
+a\) Read metadata and handle NA strings
+
+```{r}
+
+```
+
+b\) mutate age col
+
+```{r}
+
+```
+
+c\) filtering data (case-control, remove "black")
+
+```{r}
+
+```
+
+d\) Remove superfluous cols
+
+```{r}
+
+```
+
+e\) Save cleaned df
 
 ```{r}
 
@@ -18,17 +51,81 @@ library("tidyverse")
 
 ## Protein Data
 
+a\) Read protein data
+
+```{r}
+
+```
+
+b\) Drop superfluous cols
+
+```{r}
+
+```
+
+c\) New col based on paper (ref: ...)
+
+```{r}
+
+```
+
+d\) Save cleaned df
+
 ```{r}
 
 ```
 
 ## RNA-Seq Data
 
+a1) Read the RNA-seq data
+
 ```{r}
 
 ```
 
-## Merging datasets
+a2) Read the gene data
+
+```{r}
+
+```
+
+a3) Read the sample data
+
+```{r}
+
+```
+
+b\) Transpose df and rename sample id col
+
+```{r}
+
+```
+
+c\) Rename gene cols
+
+```{r}
+
+```
+
+d-e) Add donor_id and structure acronym + Remove rnaseq id
+
+```{r}
+
+```
+
+f\) Place the two added col in first position
+
+```{r}
+
+```
+
+g\) Save cleaned df
+
+```{r}
+
+```
+
+## Merging datasets (maybe?)
 
 ```{r}
 
