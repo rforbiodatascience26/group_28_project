@@ -8,6 +8,7 @@ format: html
 ```{r}
 library("here")
 library("tidyverse")
+# library("purrr") # it's already inside tidyverse
 ```
 
 Data paths:
@@ -28,7 +29,20 @@ a\) Read metadata and handle NA strings
 b\) mutate age col
 
 ```{r}
-
+metadata_df |>
+  mutate(age = map_dbl(.x = age, 
+                   ~ str_split(.x, "[-+]",simplify = T) |>
+                     # we look for ranges (-) or + (when more than 100y)
+                     # and split into the two numbers
+                     as.numeric() |> 
+                     # we convert all values into numbers
+                     mean(na.rm = T) |> 
+                     # we take the mean. if there is only one val,
+                     # or the other is NA (100+) => the single val is returned
+                     floor() 
+                     # in case the mean of a range returns a .5
+                   )
+         )
 ```
 
 c\) filtering data (case-control, remove "black")
@@ -110,13 +124,18 @@ c\) Rename gene cols
 d-e) Add donor_id and structure acronym + Remove rnaseq id
 
 ```{r}
-
+rnaseq_df <- rnaseq_df |> 
+  inner_join(sample_df |>
+               select(rnaseq_profile_id, donor_id, structure_acronym),
+             by = join_by(sample_id == rnaseq_profile_id)) |>
+  select(-sample_id)
 ```
 
 f\) Place the two added col in first position
 
 ```{r}
-
+rnaseq_df <- rnaseq_df |> 
+  relocate(donor_id, structure_acronym)
 ```
 
 g\) Save cleaned df
