@@ -81,7 +81,7 @@ metadata_df <- metadata_df |>
 f\) Save cleaned df
 
 ```{r}
-metadata_file <- str_c(data_dir, "/donor_metadata_clean.csv")
+metadata_file <- str_c(data_dir, "/03_clean_donor_metadata.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
 
