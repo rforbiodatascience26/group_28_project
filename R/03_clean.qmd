@@ -23,7 +23,7 @@ raw_dir <- here("data/_raw")
 a\) Read metadata and handle NA strings
 
 ```{r}
-metadata_df <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
+donor_metadata <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
   header = TRUE,
   stringsAsFactors = FALSE,
   na.strings = c("NA", "N/A", "", "Unknown or N/A" ))
@@ -32,7 +32,7 @@ metadata_df <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
 b\) mutate age col
 
 ```{r}
-metadata_df |>
+donor_metadata |>
   mutate(age = map_dbl(.x = age, 
                    ~ str_split(.x, "[-+]",simplify = T) |>
                      # we look for ranges (-) or + (when more than 100y)
@@ -52,19 +52,19 @@ c\) filtering data (case-control, remove "black")
 
 ```{r}
 #| eval: false
-metadata_df |> distinct(nincds_arda_diagnosis)
+donor_metadata |> distinct(nincds_arda_diagnosis)
 ```
 
 ```{r}
-metadata_df <- metadata_df |> 
+donor_metadata <- donor_metadata |> 
   filter(nincds_arda_diagnosis != "Dementia, Type Unknown"
-                                     & race != "black") |>
+                                     & race != "black") 
 ```
 
 d\) Creating needed columns
 
 ```{r}
-metadata_df <- metadata_df |> 
+donor_metadata <- donor_metadata |> 
   mutate(alzheimer=case_when(
     nincds_arda_diagnosis == "No Dementia" ~ "no",
     TRUE ~ "yes"
@@ -74,14 +74,14 @@ metadata_df <- metadata_df |>
 e\) Remove superfluous cols
 
 ```{r}
-metadata_df <- metadata_df |> 
+donor_metadata <- donor_metadata |> 
   select(-c(name, control_set, ever_tbi_w_loc, race, hispanic, nincds_arda_diagnosis))
 ```
 
 f\) Save cleaned df
 
 ```{r}
-metadata_file <- str_c(data_dir, "/donor_metadata_clean.csv")
+metadata_file <- str_c(data_dir, "/03_clean_donor_metadata.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
 
