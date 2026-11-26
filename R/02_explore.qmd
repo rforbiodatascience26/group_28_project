@@ -6,6 +6,7 @@ format: html
 ## Library Loading
 
 ```{r}
+#| results: hide
 library("here")
 library("tidyverse")
 ```
@@ -13,6 +14,15 @@ library("tidyverse")
 ## Exploring Donor Metadata
 
 #### (Roke)
+
+```{r}
+donor_metadata <- read_csv(here("data/_raw/donor_metadata.csv"))
+
+```
+
+```{r}
+glimpse(donor_metadata)
+```
 
 ## Protein Data
 

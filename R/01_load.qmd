@@ -6,6 +6,7 @@ format: html
 ## Library Loading
 
 ```{r}
+#| message: false
 library("here")
 library("tidyverse")
 ```
@@ -30,12 +31,18 @@ if (!dir.exists(raw_data_dir)) {
 #### (Roke)
 
 ```{r}
-url <- "https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorDetail,rma::options[num_rows$eqall]"
-  
-donor_metadata <- read_csv(url)
+#| message: false
 
-write_csv(x = donor_metadata,
-          file = str_c(raw_data_dir, "/donor_metadata.csv"))
+metadata_file <- str_c(raw_data_dir, "/donor_metadata_file.csv")
+
+if (!file.exists(metadata_file)){
+  url <- "https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorDetail,rma::options[num_rows$eqall]"
+  
+  donor_metadata <- read_csv(url)
+  
+  write_csv(x = donor_metadata,
+            file = metadata_file)
+}
 ```
 
 ## Protein Data
@@ -43,10 +50,16 @@ write_csv(x = donor_metadata,
 #### (Pilar)
 
 ```{r}
-prot_data <- read_csv("https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorMetric,rma::options[num_rows$eqall]")
+#| message: false
 
-write_csv(x = prot_data,
-          file = str_c(raw_data_dir, "/prot_data.csv"))
+prot_file = str_c(raw_data_dir, "/prot_data.csv")
+
+if (!file.exists(prot_file)){
+  prot_data <- read_csv("https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorMetric,rma::options[num_rows$eqall]")
+  
+  write_csv(x = prot_data,
+            file = prot_file)
+}
 ```
 
 ## RNA-Seq Data
@@ -54,14 +67,34 @@ write_csv(x = prot_data,
 #### (Teo)
 
 ```{r}
+#| message: false
+#| echo: false
+
 url <- "https://aging.brain-map.org/api/v2/well_known_file_download/502999992"
-rnaseq.zip <- file.path(raw_data_dir, "rnaseq.zip")
 
-options(timeout=300)
-if (!file.exists(rnaseq.zip)){
+rnaseq.zip <- str_c(raw_data_dir, "/rnaseq.zip")
+unnecessary_file <- map_chr(.x = c("fpkm_table_unnormalized.csv",
+                                   "README.txt"),
+                            ~ str_c(raw_data_dir, "/", .x)
+                            )
+initial_rnaseq_file <- str_c(raw_data_dir, "/fpkm_table_normalized.csv")
+final_rnaseq_file <- str_c(initial_rnaseq_file, ".gz")
+
+
+options(timeout=300) # default is 120 (too little to manage)
+if (!file.exists(final_rnaseq_file)){
   download.file(url, destfile = rnaseq.zip, mode = "wb")
+  unzip(rnaseq.zip, exdir = raw_data_dir)
+  
+  fpkm_normalized <- read_csv(initial_rnaseq_file)
+  write_csv(x = fpkm_normalized, 
+            file = final_rnaseq_file)
+  # gzip the file to occupy less space
+  
+  file.remove(c(rnaseq.zip, 
+                unnecessary_file, 
+                initial_rnaseq_file)
+              )
+  # removing all the unnecessary files
 }
-unzip(rnaseq.zip, exdir = raw_data_dir)
-
-fpkm_normalized <- read_csv(here("data", "_raw", "fpkm_table_normalized.csv"))
 ```
