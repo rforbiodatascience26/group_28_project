@@ -1,5 +1,5 @@
 ---
-title: "02_clean"
+title: "03_clean"
 format: html
 ---
 
@@ -8,9 +8,56 @@ format: html
 ```{r}
 library("here")
 library("tidyverse")
+# library("purrr") # it's already inside tidyverse
+```
+
+Data paths:
+
+```{r}
+data_dir <- here("data")
+raw_dir <- here("data/_raw")
 ```
 
 ## Donor Metadata
+
+a\) Read metadata and handle NA strings
+
+```{r}
+
+```
+
+b\) mutate age col
+
+```{r}
+metadata_df |>
+  mutate(age = map_dbl(.x = age, 
+                   ~ str_split(.x, "[-+]",simplify = T) |>
+                     # we look for ranges (-) or + (when more than 100y)
+                     # and split into the two numbers
+                     as.numeric() |> 
+                     # we convert all values into numbers
+                     mean(na.rm = T) |> 
+                     # we take the mean. if there is only one val,
+                     # or the other is NA (100+) => the single val is returned
+                     floor() 
+                     # in case the mean of a range returns a .5
+                   )
+         )
+```
+
+c\) filtering data (case-control, remove "black")
+
+```{r}
+
+```
+
+d\) Remove superfluous cols
+
+```{r}
+
+```
+
+e\) Save cleaned df
 
 ```{r}
 
@@ -19,17 +66,108 @@ library("tidyverse")
 
 ## Protein Data
 
+a\) Read protein data
+
+```{r}
+
+```
+
+b\) Drop superfluous cols
+
+```{r}
+
+```
+
+c\) New col based on paper (ref: ...)
+
+```{r}
+
+```
+
+d\) Save cleaned df
+
 ```{r}
 
 ```
 
 ## RNA-Seq Data
 
-```{r}
+a1) Read the RNA-seq data
 
+```{r}
+#| message: false
+rnaseq_df <- read_csv(str_c(raw_dir, "/fpkm_table_normalized.csv.gz"))
 ```
 
-## Merging datasets
+a2) Read the gene data
+
+```{r}
+#| message: false
+genes_data <- read_csv(str_c(raw_dir, "/rows-genes.csv"))
+```
+
+a3) Read the sample data
+
+```{r}
+#| message: false
+samples_data <- read_csv(str_c(raw_dir, "/columns-samples.csv"))
+```
+
+b\) Transpose df and rename sample id col
+
+```{r}
+rnaseq_df <- rnaseq_df |>
+  rename(gene_id = 1) |>
+  # not necessary but easier than "gene_id\rnaseq_profile_id"
+  column_to_rownames(var = "gene_id") |>
+  # we indicate that this is the header
+  t() |> 
+  # we use to transpose because the data is too big for the pivot functions
+  as_tibble(rownames = "rnaseq_profile_id") |>    
+  # because it generates a matrix
+  mutate(rnaseq_profile_id = as.numeric(rnaseq_profile_id))
+```
+
+c\) Rename gene cols
+
+```{r}
+names_map <- genes_data |>
+  filter(!is.na(gene_symbol)) |>
+  # we must remove NAs to avoid missing names
+  mutate(gene_symbol = make.unique(gene_symbol, sep = "_")) |>
+  # we should handle possible collisions (symbol:id being 1:N)
+  pull(gene_id, name = gene_symbol)
+  # we pull as a named vector
+
+rnaseq_df <- rnaseq_df |>
+  rename(any_of(names_map))
+```
+
+d-e) Add donor_id and structure acronym + Remove rnaseq id
+
+```{r}
+rnaseq_df <- rnaseq_df |> 
+  inner_join(sample_df |>
+               select(rnaseq_profile_id, donor_id, structure_acronym),
+             by = join_by(rnaseq_profile_id == rnaseq_profile_id)) |>
+  # it is not necessary to specify "by", but it makes the join clearer
+  select(-sample_id)
+```
+
+f\) Place the two added col in first position
+
+```{r}
+rnaseq_df <- rnaseq_df |> 
+  relocate(donor_id, structure_acronym)
+```
+
+g\) Save cleaned df
+
+```{r}
+write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.tsv.gz"))
+```
+
+## Merging datasets (maybe?)
 
 ```{r}
 

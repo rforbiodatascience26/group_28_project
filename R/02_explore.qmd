@@ -31,3 +31,26 @@ glimpse(donor_metadata)
 ## RNA-Seq Data
 
 #### (Teo)
+
+```{r}
+# 1. Initial exploration of the data
+View(fpkm_normalized)
+str(fpkm_normalized)
+summary(fpkm_normalized)
+
+is.na(fpkm_normalized)
+
+# 2. Preparing the data to expand it 
+
+fpkm_t <- fpkm_normalized |> 
+  rename(gene_id = 1) |> 
+  pivot_longer(
+    cols = -gene_id,
+    names_to = "rnaseq_profile_id",
+    values_to = "fpkm"
+  ) |> 
+  pivot_wider(
+    names_from = gene_id,
+    values_from = fpkm
+  )
+```
