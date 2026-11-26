@@ -84,49 +84,64 @@ write_csv(x = protein_df,
 a1) Read the RNA-seq data
 
 ```{r}
-
+fpkm_normalized <- read_csv(here("data", "_raw", "fpkm_table_normalized.csv"))
 ```
 
 a2) Read the gene data
 
 ```{r}
-
+genes_data <- read_csv(here("data", "_raw", "rows-genes.csv"))
 ```
 
 a3) Read the sample data
 
 ```{r}
-
+samples_data <- read_csv(here("data", "_raw", "columns-samples.csv"))
 ```
 
 b\) Transpose df and rename sample id col
 
 ```{r}
+rnaseq_transp <- fpkm_normalized |>
+  rename(gene_id = 1) |>     # not necessary but easier than "gene_id\rnaseq_profile_id"
+  column_to_rownames(var = "gene_id") |>    # we indicate that this is the header
+  t() |> # we use to transpose because the data is too big for the pivot functions
+  as_tibble(rownames = "rnaseq_profile_id") |>    # because t generates a matrix
+  mutate(rnaseq_profile_id = as.numeric(rnaseq_profile_id))
 
 ```
 
 c\) Rename gene cols
 
 ```{r}
+identical(names(rnaseq_transp)[-1], as.character(genes_data$gene_id)) # Verify the gene IDs are in the exact same order
 
+rnaseq_transp <- rnaseq_transp |>
+  set_names(c("rnaseq_profile_id", make.unique(genes_data$gene_symbol)))
 ```
 
 d-e) Add donor_id and structure acronym + Remove rnaseq id
 
 ```{r}
-
+rnaseq_clean <- rnaseq_transp |>
+  left_join(
+    samples_data |> select(rnaseq_profile_id, donor_id, structure_acronym),
+    by = "rnaseq_profile_id"
+  ) |>
+  select(-rnaseq_profile_id)
 ```
 
 f\) Place the two added col in first position
 
 ```{r}
-
+rnaseq_clean <- rnaseq_clean |>
+  relocate(donor_id, structure_acronym)
 ```
 
 g\) Save cleaned df
 
 ```{r}
-
+write_tsv(rnaseq_clean, here("data", "03_rnaseq_clean.tsv.gz"))
 ```
 
 ## Merging datasets (maybe?)
