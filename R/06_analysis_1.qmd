@@ -1,0 +1,43 @@
+---
+title: "06_analysis_1"
+format: html
+---
+
+## Loading Library
+
+```{r}
+library("here")
+library("tidyverse")
+```
+
+## 1) Age Distribution
+
+Violin plot of age distributions in the 4 groups
+
+```{r}
+
+```
+
+## 2) Sex Counts
+
+Bar plot of sex counts in the 4 groups
+
+```{r}
+
+```
+
+## 3) Protein Quantification
+
+Box plots of Luminex concentrations of available proteins. The data is stratified by group.
+
+```{r}
+
+```
+
+## 4) Protein Ratios
+
+Box plots of ratios of typical AD biomarkers. The data is stratified by group.
+
+```{r}
+
+```

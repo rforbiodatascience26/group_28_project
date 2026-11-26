@@ -1,0 +1,21 @@
+---
+title: "05_describe"
+format: html
+---
+
+## Library Loading
+
+```{r}
+library("here")
+library("tidyverse")
+```
+
+## Data Loading
+
+```{r}
+
+```
+
+## Data Description
+
+\*Add sample numbers and describe the data cols etc. Use some chunks to show some numbers\*
