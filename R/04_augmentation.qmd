@@ -1,0 +1,57 @@
+---
+title: "04_augmentation"
+format: html
+---
+
+
+
+## Library Loading
+
+```{r}
+library("here")
+library("tidyverse")
+# library("purrr") # it's already inside tidyverse
+```
+
+
+Data paths:
+
+```{r}
+data_dir <- here("data")
+```
+
+
+
+## Augment donor metadata
+
+### Read file
+
+```{r}
+donor_metadata <- read.csv(str_c(data_dir,"/03_clean_donor_metadata.csv"))
+
+```
+
+### Read file
+
+```{r}
+donor_metadata <- donor_metadata |>
+  mutate(group_colors=case_when(
+    alzheimer=="yes" & num_tbi_w_loc==0 ~ "blue",
+    alzheimer=="yes" & num_tbi_w_loc!=0 ~ "red",
+    alzheimer=="no" & num_tbi_w_loc==0 ~ "green",
+    alzheimer=="no" & num_tbi_w_loc!=0 ~ "yellow",
+  ))
+
+```
+
+### Write augmented file
+
+```{r}
+metadata_file <- str_c(data_dir, "/04_aug_donor_metadata.csv")
+write_csv(x = donor_metadata,
+          file = metadata_file)
+```
+
+
+
+
