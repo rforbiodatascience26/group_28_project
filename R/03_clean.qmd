@@ -99,8 +99,9 @@ protein_df <- read_csv(here("data/_raw/prot_data.csv"))
 b\) Drop superfluous cols
 
 ```{r}
-protein_df <- protein_df |>
-  select(!c(donor_name, structure_id))
+protein_clean_df <- protein_df |>
+  select(!c(donor_name, structure_id), -starts_with("IHC")) |>
+  filter(structure_acronym %in% c("HIP", "FWM"))
 
 ```
 
@@ -113,8 +114,9 @@ c\) New col based on paper (ref: ...)
 d\) Save cleaned df
 
 ```{r}
-write_csv(x = protein_df,
+write_csv(x = protein_clean_df,
           file = here("data/clean_protein_data.csv"))
+View(protein_clean_df)
 ```
 
 ## RNA-Seq Data
