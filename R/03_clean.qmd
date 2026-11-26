@@ -23,7 +23,10 @@ raw_dir <- here("data/_raw")
 a\) Read metadata and handle NA strings
 
 ```{r}
-
+metadata_df <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
+  header = TRUE,
+  stringsAsFactors = FALSE,
+  na.strings = c("NA", "N/A", "", "Unknown or N/A" ))
 ```
 
 b\) mutate age col
@@ -48,19 +51,39 @@ metadata_df |>
 c\) filtering data (case-control, remove "black")
 
 ```{r}
-
+#| eval: false
+metadata_df |> distinct(nincds_arda_diagnosis)
 ```
 
-d\) Remove superfluous cols
-
 ```{r}
-
+metadata_df <- metadata_df |> 
+  filter(nincds_arda_diagnosis != "Dementia, Type Unknown"
+                                     & race != "black") |>
 ```
 
-e\) Save cleaned df
+d\) Creating needed columns
 
 ```{r}
+metadata_df <- metadata_df |> 
+  mutate(alzheimer=case_when(
+    nincds_arda_diagnosis == "No Dementia" ~ "no",
+    TRUE ~ "yes"
+  ))
+```
 
+e\) Remove superfluous cols
+
+```{r}
+metadata_df <- metadata_df |> 
+  select(-c(name, control_set, ever_tbi_w_loc, race, hispanic, nincds_arda_diagnosis))
+```
+
+f\) Save cleaned df
+
+```{r}
+metadata_file <- str_c(data_dir, "/donor_metadata_clean.csv")
+write_csv(x = donor_metadata,
+          file = metadata_file)
 
 ```
 

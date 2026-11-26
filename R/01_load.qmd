@@ -33,7 +33,7 @@ if (!dir.exists(raw_data_dir)) {
 ```{r}
 #| message: false
 
-metadata_file = str_c(raw_data_dir, "/donor_metadata.csv")
+metadata_file <- str_c(raw_data_dir, "/donor_metadata_file.csv")
 
 if (!file.exists(metadata_file)){
   url <- "https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorDetail,rma::options[num_rows$eqall]"
@@ -78,7 +78,7 @@ unnecessary_file <- map_chr(.x = c("fpkm_table_unnormalized.csv",
                             ~ str_c(raw_data_dir, "/", .x)
                             )
 initial_rnaseq_file <- str_c(raw_data_dir, "/fpkm_table_normalized.csv")
-final_rnaseq_file <- str_c(rnaseq_file, ".gz")
+final_rnaseq_file <- str_c(initial_rnaseq_file, ".gz")
 
 
 options(timeout=300) # default is 120 (too little to manage)
@@ -86,7 +86,7 @@ if (!file.exists(final_rnaseq_file)){
   download.file(url, destfile = rnaseq.zip, mode = "wb")
   unzip(rnaseq.zip, exdir = raw_data_dir)
   
-  fpkm_normalized <- read_csv(rnaseq_file)
+  fpkm_normalized <- read_csv(initial_rnaseq_file)
   write_csv(x = fpkm_normalized, 
             file = final_rnaseq_file)
   # gzip the file to occupy less space
