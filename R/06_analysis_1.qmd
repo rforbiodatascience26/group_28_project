@@ -6,8 +6,23 @@ format: html
 ## Loading Library
 
 ```{r}
+#| message: false
 library("here")
 library("tidyverse")
+# library(purrr) # already loaded by tidyverse
+library("broom")
+library("ggpubr")
+```
+
+```{r}
+data_dir <- here("data")
+```
+
+```{r}
+color_vector <- c("AD_noTBI" = "blue",
+                  "AD_TBI" = "red",
+                  "noAD_noTBI" = "green",
+                  "noAD_TBI" = "yellow")
 ```
 
 ## 1) Age Distribution
@@ -28,11 +43,265 @@ Bar plot of sex counts in the 4 groups
 
 ## 3) Protein Quantification
 
-Box plots of Luminex concentrations of available proteins. The data is stratified by group.
+```{r}
+#| message: false
+protein_df <- read_csv(str_c(data_dir, "/03_protein_data_clean.csv"))
+```
+
+TO BE ADDED IN THE AUGMENTATION
+
+```{r}
+#| message: false
+donor_df <- read_csv(str_c(data_dir, "/04_donor_metadata_aug.csv"))
+
+protein_df <- protein_df |>
+  inner_join((donor_df |>
+                select(donor_id, group_colors)),
+             by = join_by(donor_id)) |>
+  mutate(group_colors = case_when(group_colors == "blue" ~ "AD_noTBI",
+                                  group_colors == "red" ~ "AD_TBI",
+                                  group_colors == "green" ~ "noAD_noTBI",
+                                  TRUE ~ "noAD_TBI")) |>
+  rename(group_label = group_colors)
+```
+
+Pivoting
+
+```{r}
+long_protein_df <- protein_df |>
+  mutate(donor_id = as.character(donor_id)) |>
+  # Transforming donor_id into a string to avoid scaling
+  select(-ends_with("ratio")) |>
+  rename_with(~str_remove(.x,pattern="_[pn]g_per_mg")) |>
+  # Removing trailing _pg_per_mg or _ng_per_mg
+  pivot_longer(cols = where(is.numeric), 
+               names_to = "protein", values_to = "concentration"
+               )
+```
+
+Comparisons to make
+
+```{r}
+comps_df <- data.frame(name = c("AD_noTBI_vs_AD_TBI",
+                                "noAD_noTBI_vs_noAD_TBI",
+                                "noAD_TBI_vs_AD_TBI",
+                                "noAD_noTBI_vs_AD_noTBI"),
+                       group1 = c("AD_noTBI", "noAD_noTBI",
+                                  "noAD_TBI", "noAD_noTBI"),
+                       group2 = c("AD_TBI", "noAD_TBI",
+                                  "AD_TBI", "AD_noTBI")
+                       )
+```
+
+Computing p-vals and adjusted p-vals for the hippocampus area
+
+```{r}
+p_vals_hip <-
+long_protein_df |>
+  filter(structure_acronym == "HIP") |>
+  nest(.by = protein) |>
+  # a nested df with a col protein and a col data containing the dfs/tibbles
+  mutate(results = 
+           map(.x = data,
+               # for each protein tibble
+               .f = \(df) 
+               pmap(.l = comps_df,
+                    # for each row in comps_df
+                    \(name, group1, group2) {
+                      (df |>
+                         filter(group_label %in% c(group1, group2)) |>
+                         # Only retain the pairs for comparison
+                         wilcox.test(concentration ~ group_label,
+                                     data = _, exact = F) |>
+                         # test concentration changes between the two groups
+                         tidy() |>
+                         # tidy tibble with broom
+                         mutate(comp_name = name)
+                         # add a col to keep track of the comparison made 
+                      )}
+                    ) |>
+                 list_rbind()
+                 # concatenate all the comparison results from 
+                 # this protein into rows
+               )
+         ) |>
+  select(protein, results) |>
+  unnest(results) |> 
+  mutate(p_adj = p.adjust(p.value, method = "BH"), .by = comp_name)
+```
+
+```{r}
+#| echo: false
+#| eval: false
+p_vals_hip |>
+  filter(p_adj < 0.05)
+
+```
 
 ```{r}
 
+pos <-  long_protein_df |>
+  filter(structure_acronym == "HIP") |>
+  drop_na(concentration) |>
+  summarise(start_pos = quantile(concentration, p = 0.9), # slightly higher than Q3
+            span = IQR(concentration), # the interquartile range to gauge the y-axis scale
+            .by = protein)
+
+
+
+p_vals_hip_pos <- p_vals_hip |>
+  filter(p_adj < 0.05) |>
+  left_join(comps_df, by = join_by(comp_name == name)) |>
+  left_join(pos, by = "protein") |>
+  mutate(rank = row_number(), .by = protein) |>
+  mutate(y.position = start_pos + rank * 0.12 * span,
+         label = round(p_adj,3))
 ```
+
+Box plots of Luminex concentrations of available proteins in the Hippocampus
+
+```{r}
+#| fig-width: 12
+#| fig-height: 9
+long_protein_df |>
+  filter(structure_acronym == "HIP") |>
+  drop_na(concentration) |>
+  ggplot(aes(x = group_label, y = concentration, fill = group_label)) +
+  geom_boxplot(outliers = F) +
+  scale_fill_manual(values = color_vector) +
+  facet_wrap(~ protein, nrow = 4, scales = "free_y") +
+  stat_pvalue_manual(p_vals_hip_pos, label = "label", tip.length = 0.01,
+                     inherit.aes = FALSE) +
+  labs(title = "Protein Concentrations in the Hippocampus", 
+       caption = paste("AD = Alzheimer's Disease",
+                       "TBI = Traumatic Brain Injury",
+                       "p-values have been computed via wilcoxon test (approx) and corrected for multiple protein testing within group comparison",
+                       "Note: outliers have been removed for visualisation purposes",
+                       sep = "\n")
+       ) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 22), 
+        plot.caption = element_text(size = 11, hjust=0, vjust = 0), 
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.text = element_text(size = 11, face = "italic"),
+        axis.title.y = element_text(size = 14),
+        axis.text.y = element_text(size = 10))
+```
+
+### Plot Comment
+
+In the figure above, each subplot contains 4 boxplots, one for each of the 4 groups in this study. They report the concentration of 12 different proteins that either relate to inflammation (interleukins, TNF$\alpha$*, etc.*) or to common biomarkers of AD (A$\beta$, tau, etc). The measurements come from the hippocampal region of the brain, one of the first areas to undergo neurodegeneration in AD.
+
+Almost nothing survived multiple testing correction, with the exception of phosphorylated tau between AD and no dementia with TBI. The uncorrected p-values also do not yield any more significant results, which may be due to the relatively small group sizes (and thus low statistical power).
+
+Judging by the trends alone, A$\beta$ (both the 40 and 42 aa-long variants) appear to be more concentrated in AD than in the no dementia groups. PhosphoTau also seems to follow the same trend, unlike normal tau \[check if total or normal\], whose concentration seems to be lower in AD. This suggests that the ratio of phosphoTau to normal tau may differ.
+
+RANTES (Regulated upon Activation, Normal T Cell Expressed and Secreted) also seems to be slightly higher in concentration in AD. This protein, also known as CCL5 (C-C motif chemokine ligand 5), is a pro-inflammatory chemokine protein encoded by the CCL5 gene in humans. It recruits white blood cells (leukocytes) to sites of inflammation and immune activity [(Appay, 2001)](https://doi.org/10.1016/S1471-4906(00)01812-3). This, along with similar observations for many members of the interleukin family, might suggest overall higher inflammation in AD than in no dementia. Given the lack of significant results, these observations should be treated as exploratory.
+
+Computing p-vals and adjusted p-vals for the frontal-white-matter area
+
+```{r}
+p_vals_fwm <-
+long_protein_df |>
+  filter(structure_acronym == "FWM") |>
+  nest(.by = protein) |>
+  # a nested df with a col protein and a col data containing the dfs/tibbles
+  mutate(results = 
+           map(.x = data,
+               # for each protein tibble
+               .f = \(df) 
+               pmap(.l = comps_df,
+                    # for each row in comps_df
+                    \(name, group1, group2) {
+                      (df |>
+                         filter(group_label %in% c(group1, group2)) |>
+                         # Only retain the pairs for comparison
+                         wilcox.test(concentration ~ group_label,
+                                     data = _, exact = F) |>
+                         # test concentration changes between the two groups
+                         tidy() |>
+                         # tidy tibble with broom
+                         mutate(comp_name = name)
+                         # add a col to keep track of the comparison made 
+                      )}
+                    ) |>
+                 list_rbind()
+                 # concatenate all the comparison results from 
+                 # this protein into rows
+               )
+         ) |>
+  select(protein, results) |>
+  unnest(results) |> 
+  mutate(p_adj = p.adjust(p.value, method = "BH"), .by = comp_name)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+p_vals_fwm |>
+  filter(p.value < 0.05)
+```
+
+```{r}
+pos <-  long_protein_df |>
+  filter(structure_acronym == "FWM") |>
+  drop_na(concentration) |>
+  summarise(start_pos = quantile(concentration, p = 0.9), # slightly higher than Q3
+            span = IQR(concentration), # the interquartile range to gauge the y-axis scale
+            .by = protein)
+
+
+
+p_vals_fwm_pos <- p_vals_fwm |>
+  filter(p_adj < 0.05) |>
+  left_join(comps_df, by = join_by(comp_name == name)) |>
+  left_join(pos, by = "protein") |>
+  mutate(rank = row_number(), .by = protein) |>
+  mutate(y.position = start_pos + rank * 0.12 * span,
+         label = round(p_adj,3))
+```
+
+Box plots
+
+```{r}
+#| fig-width: 12
+#| fig-height: 9
+long_protein_df |>
+  filter(structure_acronym == "FWM") |>
+  drop_na(concentration) |>
+  ggplot(aes(y = concentration, fill = group_label)) +
+  geom_boxplot(outliers = F) +
+  scale_fill_manual(values = color_vector) +
+  facet_wrap(~ protein, nrow = 4, scales = "free_y") +
+  stat_pvalue_manual(p_vals_fwm_pos, label = "label", tip.length = 0.01,
+                     inherit.aes = FALSE) +
+  labs(title = "Protein Concentrations in the Frontal White Matter", 
+       caption = paste("AD = Alzheimer's Disease",
+                       "TBI = Traumatic Brain Injury",
+                       "p-values have been computed via wilcoxon test (approx) and corrected for multiple protein testing within group comparison",
+                       "Note: outliers have been removed for visualisation purposes",
+                       sep = "\n")
+       ) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 22), 
+        plot.caption = element_text(size = 11, hjust=0, vjust = 0), 
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.text = element_text(size = 11, face = "italic"),
+        axis.title.y = element_text(size = 14)
+        )
+```
+
+### Plot Comment
+
+Similar to the previous plot, this one shows protein concentrations in the four groups in the Frontal White Matter (FWM). This is one of the last regions to be affected by Alzheimer's and is known for its richness in myelinated sheaths, which decay as the disease progresses. Here is also where the microglia, the immune system of the brain, resides.
+
+Here, nothing is statistically significant, although the uncorrected p-value for mcp_1 (noAD_TBI vs AD_TBI) was significant.
+
+Judging again by the trends only, IL-10 (Interleukin-10) seems to be high in TBI regardless of AD. This protein is an anti-inflammatory cytokine that limits immune responses and prevents tissue damage [(Saraiva, 2010)](https://doi.org/10.1038/nri2711), by stimulating the production of TNF$\alpha$, and some interleukins. This stimulation is observed in AD with TBI (in some patients), but not in the other. Interestingly, some patients with no dementia and no TBI also have higher concentrations.
 
 ## 4) Protein Ratios
 

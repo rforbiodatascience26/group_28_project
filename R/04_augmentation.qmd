@@ -3,16 +3,13 @@ title: "04_augmentation"
 format: html
 ---
 
-
-
 ## Library Loading
 
 ```{r}
+#| message: false
 library("here")
 library("tidyverse")
-# library("purrr") # it's already inside tidyverse
 ```
-
 
 Data paths:
 
@@ -22,9 +19,12 @@ data_dir <- here("data")
 
 
 ## Reaing the files
+## Augment donor metadata
+
+### Read file
 
 ```{r}
-donor_metadata <- read.csv(str_c(data_dir,"/03_clean_donor_metadata.csv"))
+donor_metadata <- read.csv(str_c(data_dir,"/03_donor_metadata_clean.csv"))
 
 protein_df <- read.csv(str_c(data_dir,"/clean_protein_data.csv"))
 
@@ -78,7 +78,7 @@ rnaseq_df <- rnaseq_df |>
 ## Write augmented files
 
 ```{r}
-metadata_file <- str_c(data_dir, "/04_aug_donor_metadata.csv")
+metadata_file <- str_c(data_dir, "/04_donor_metadata_aug.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
 
@@ -95,3 +95,4 @@ write_csv(x = rnaseq_df,
 
 
 
+## Next augmentation:
