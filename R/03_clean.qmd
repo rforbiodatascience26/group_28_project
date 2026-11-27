@@ -125,7 +125,7 @@ e\) Save cleaned df
 
 ```{r}
 write_csv(x = protein_clean_df,
-          file = here("data/protein_data_clean.csv"))
+          file = here("data/03_protein_data_clean.csv"))
 ```
 
 Saving cleaned metadata after filtering (f)
