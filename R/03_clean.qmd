@@ -6,6 +6,7 @@ format: html
 ## Library Loading
 
 ```{r}
+#| message: false
 library("here")
 library("tidyverse")
 # library("purrr") # it's already inside tidyverse
@@ -87,10 +88,10 @@ donor_metadata <- donor_metadata |>
 f\) Save cleaned df
 
 ```{r}
-metadata_file <- str_c(data_dir, "/03_clean_donor_metadata.csv")
+#| eval: false
+metadata_file <- str_c(data_dir, "/03_donor_metadata_clean.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
-
 ```
 
 ## Protein Data
@@ -98,31 +99,52 @@ write_csv(x = donor_metadata,
 a\) Read protein data
 
 ```{r}
+#| message: false
 protein_df <- read_csv(here("data/_raw/prot_data.csv"))
-
 ```
 
 b\) Drop superfluous cols
 
 ```{r}
 protein_clean_df <- protein_df |>
-  select(!c(donor_name, structure_id), -starts_with("IHC")) |>
+  select(-c(donor_name, structure_id), -starts_with("IHC")) |>
   filter(structure_acronym %in% c("HIP", "FWM"))
-
 ```
 
-c\) New col based on paper (ref: ...)
+c\) Handling NAs in cols and rows
 
 ```{r}
-
+protein_clean_df <-
+protein_clean_df |> 
+  filter(rowMeans(is.na(pick(everything())
+                        )
+                  ) <= 0.4) |>
+  # removing rows with more than 40% NAs
+  select(where( ~mean(is.na(.x)) <= 0.4))
+  # removing cols with more than 40% NAs
 ```
 
 d\) Save cleaned df
 
 ```{r}
+#| eval: false
 write_csv(x = protein_clean_df,
-          file = here("data/clean_protein_data.csv"))
-View(protein_clean_df)
+          file = here("data/protein_data_clean.csv"))
+```
+
+## Merging metadata and protein data
+
+Merging metadata with protein data
+
+```{r}
+metadata_n_protein_df <- donor_metadata |>
+  inner_join(y = protein_clean_df,
+             by = join_by(donor_id))
+```
+
+```{r}
+write_csv(metadata_n_protein_df, 
+          str_c(data_dir, "/03_metadata_n_protein_clean.csv"))
 ```
 
 ## RNA-Seq Data
@@ -184,8 +206,7 @@ d-e) Add donor_id and structure acronym + Remove rnaseq id
 rnaseq_df <- rnaseq_df |> 
   inner_join(samples_df |>
                select(rnaseq_profile_id, donor_id, structure_acronym),
-             by = join_by(rnaseq_profile_id == rnaseq_profile_id)) |>
-  # it is not necessary to specify "by", but it makes the join clearer
+             by = join_by(rnaseq_profile_id)) |>
   select(-rnaseq_profile_id)
 ```
 
@@ -196,14 +217,17 @@ rnaseq_df <- rnaseq_df |>
   relocate(donor_id, structure_acronym)
 ```
 
-g\) Save cleaned df
+g\) Filtering for samples of interest
 
 ```{r}
-write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.tsv.gz"))
+rnaseq_df <- 
+rnaseq_df |> 
+  inner_join(metadata_n_protein_df |> select(donor_id, structure_acronym),
+             by = join_by(donor_id, structure_acronym))
 ```
 
-## Merging datasets (maybe?)
+h\) Save cleaned df
 
 ```{r}
-
+write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
 ```
