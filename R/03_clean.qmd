@@ -54,6 +54,7 @@ c\) filtering data (case-control, remove "black")
 
 ```{r}
 #| eval: false
+#| echo: false
 donor_metadata |> 
   distinct(nincds_arda_diagnosis)
 ```
@@ -85,14 +86,7 @@ donor_metadata <- donor_metadata |>
          )
 ```
 
-f\) Save cleaned df
-
-```{r}
-#| eval: false
-metadata_file <- str_c(data_dir, "/03_donor_metadata_clean.csv")
-write_csv(x = donor_metadata,
-          file = metadata_file)
-```
+f\) Save cleaned df (moved after protein for filtering reasons)
 
 ## Protein Data
 
@@ -103,12 +97,15 @@ a\) Read protein data
 protein_df <- read_csv(here("data/_raw/prot_data.csv"))
 ```
 
-b\) Drop superfluous cols
+b\) Drop superfluous cols and filter for structure and donors
 
 ```{r}
 protein_clean_df <- protein_df |>
   select(-c(donor_name, structure_id), -starts_with("IHC")) |>
-  filter(structure_acronym %in% c("HIP", "FWM"))
+  filter(structure_acronym %in% c("HIP", "FWM")) |>
+  filter(donor_id %in% (donor_metadata |> 
+                          pull(donor_id))
+         )
 ```
 
 c\) Handling NAs in cols and rows
@@ -124,27 +121,27 @@ protein_clean_df |>
   # removing cols with more than 40% NAs
 ```
 
-d\) Save cleaned df
+e\) Save cleaned df
 
 ```{r}
-#| eval: false
 write_csv(x = protein_clean_df,
           file = here("data/protein_data_clean.csv"))
 ```
 
-## Merging metadata and protein data
-
-Merging metadata with protein data
+Saving cleaned metadata after filtering (f)
 
 ```{r}
-metadata_n_protein_df <- donor_metadata |>
-  inner_join(y = protein_clean_df,
-             by = join_by(donor_id))
-```
+donor_metadata <- donor_metadata |>
+  filter(donor_id %in% (protein_clean_df |>
+                          distinct(donor_id) |>
+                          pull(donor_id)
+                        )
+         )
 
-```{r}
-write_csv(metadata_n_protein_df, 
-          str_c(data_dir, "/03_metadata_n_protein_clean.csv"))
+
+metadata_file <- str_c(data_dir, "/03_donor_metadata_clean.csv")
+write_csv(x = donor_metadata,
+          file = metadata_file)
 ```
 
 ## RNA-Seq Data
@@ -222,7 +219,8 @@ g\) Filtering for samples of interest
 ```{r}
 rnaseq_df <- 
 rnaseq_df |> 
-  inner_join(metadata_n_protein_df |> select(donor_id, structure_acronym),
+  inner_join(protein_clean_df |> 
+               select(donor_id, structure_acronym),
              by = join_by(donor_id, structure_acronym))
 ```
 
