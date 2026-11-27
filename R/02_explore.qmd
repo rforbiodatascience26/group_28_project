@@ -28,7 +28,7 @@ donor_metadata |>
 ```
 
 
-## Protein Data
+## Exploring Protein Data
 
 
 ```{r}
@@ -57,7 +57,7 @@ prot_data |>
 
 
 
-## RNA-Seq Data
+## Exploring RNA-Seq Data
 
 ```{r}
 #| eval: false
@@ -115,5 +115,27 @@ rnaseq_data |>
     .groups = "drop"
   )
 ```
+
+
+
+## Exploring RNA-Seq Metadata
+
+```{r}
+rnaseq_metadata <- read_csv(here("data/_raw/rna_metadata.csv"))
+
+dim(rnaseq_metadata)
+```
+```{r}
+glimpse(rnaseq_metadata)
+
+```
+
+
+
+
+
+
+
+
 
 
