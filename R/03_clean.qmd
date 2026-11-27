@@ -121,8 +121,7 @@ d\) Save cleaned df
 
 ```{r}
 write_csv(x = protein_clean_df,
-          file = here("data/clean_protein_data.csv"))
-View(protein_clean_df)
+          file = here("data/03_clean_protein_data.csv"))
 ```
 
 ## RNA-Seq Data
@@ -199,11 +198,12 @@ rnaseq_df <- rnaseq_df |>
 g\) Save cleaned df
 
 ```{r}
-write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.tsv.gz"))
+write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
 ```
 
 ## Merging datasets (maybe?)
 
+In the end not.
 ```{r}
 
 ```
