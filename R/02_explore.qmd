@@ -13,26 +13,57 @@ library("tidyverse")
 
 ## Exploring Donor Metadata
 
-#### (Roke)
-
 ```{r}
-donor_metadata <- read_csv(here("data/_raw/donor_metadata.csv"))
-
-```
-
-```{r}
+donor_metadata <- read_csv(here("data/_raw/donor_metadata_file.csv"))
 glimpse(donor_metadata)
 ```
+```{r}
+donor_metadata |>
+  count(sex, sort = TRUE)
+```
+
+```{r}
+donor_metadata |>
+  count(age, sort = TRUE)
+```
+
 
 ## Protein Data
 
-#### (Pilar)
+
+```{r}
+prot_data <- read_csv(here("data/_raw/prot_data.csv"))
+
+glimpse(prot_data)
+```
+
+```{r}
+head(prot_data, 5)
+```
+
+```{r}
+prot_data |>
+  summarise(
+    n_rows = n(),
+    across(where(is.character), n_distinct)
+  )
+```
+
+
+```{r}
+prot_data |>
+  summary()
+```
+
+
 
 ## RNA-Seq Data
 
-#### (Teo)
-
 ```{r}
+#| eval: false
+
+# (Teo's code)
+
 # 1. Initial exploration of the data
 View(fpkm_normalized)
 str(fpkm_normalized)
@@ -54,3 +85,35 @@ fpkm_t <- fpkm_normalized |>
     values_from = fpkm
   )
 ```
+
+
+```{r}
+rnaseq_data <- read_csv(here("data/_raw/fpkm_table_normalized.csv.gz"))
+
+dim(rnaseq_data)
+```
+
+```{r}
+glimpse(rnaseq_data[, 1:6]) #there are 378 cols, lets not print them all
+```
+
+```{r}
+# Inspect a subset of sample columns in long format to check distribution and missingness:
+
+sample_cols <- names(rnaseq_data)[-1]
+
+rnaseq_data |>
+  select(1, all_of(head(sample_cols, 5))) |>
+  pivot_longer(-1, names_to = "sample_id", values_to = "fpkm_norm") |>
+  group_by(sample_id) |>
+  summarise(
+    n_genes = n(),
+    n_na = sum(is.na(fpkm_norm)),
+    min_val = min(fpkm_norm, na.rm = TRUE),
+    median_val = median(fpkm_norm, na.rm = TRUE),
+    max_val = max(fpkm_norm, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+
