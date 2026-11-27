@@ -14,7 +14,7 @@ library("tidyverse")
 ## Exploring Donor Metadata
 
 ```{r}
-donor_metadata <- read_csv(here("data/_raw/donor_metadata_file.csv"))
+donor_metadata <- read_csv(here("data/_raw/donor_metadata.csv"))
 glimpse(donor_metadata)
 ```
 ```{r}

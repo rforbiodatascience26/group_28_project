@@ -26,9 +26,9 @@ data_dir <- here("data")
 ```{r}
 donor_metadata <- read.csv(str_c(data_dir,"/03_donor_metadata_clean.csv"))
 
-protein_df <- read.csv(str_c(data_dir,"/clean_protein_data.csv"))
+protein_df <- read.csv(str_c(data_dir,"/03_protein_data_clean.csv"))
 
-rnaseq_df <- read.csv(str_c(data_dir,"/03_rnaseq_clean.csv.gz"))
+rnaseq_df <- read.csv(str_c(data_dir,"/03_rnaseq_data_clean.csv.gz"))
 
 rna_metadata <- read.csv(str_c(data_dir,"/_raw/rna_metadata.csv"))
 
@@ -41,7 +41,7 @@ rna_metadata <- read.csv(str_c(data_dir,"/_raw/rna_metadata.csv"))
 
 ```{r}
 donor_metadata <- donor_metadata |>
-  mutate(group_colors=case_when(
+  mutate(group_label=case_when(
     alzheimer=="yes" & num_tbi_w_loc==0 ~ "AD_noTBI",
     alzheimer=="yes" & num_tbi_w_loc!=0 ~ "AD_TBI",
     alzheimer=="no" & num_tbi_w_loc==0 ~ "noAD_noTBI",
@@ -57,7 +57,7 @@ donor_metadata <- donor_metadata |>
 ### Add groups to protein_df
 ```{r}
 groups_lookup <- donor_metadata |>  #this lookup table allows to match each donor ID with its group
-  select(donor_id, group_colors) |>
+  select(donor_id, group_label) |>
   distinct()
 
 protein_df <- protein_df |>
@@ -71,7 +71,7 @@ protein_df <- protein_df |>
 ```{r}
 rnaseq_df <- rnaseq_df |>
   left_join(groups_lookup, by = "donor_id") |>
-  relocate(group_colors, .after = structure_acronym)
+  relocate(group_label, .after = structure_acronym)
 ```
 
 
@@ -82,11 +82,11 @@ metadata_file <- str_c(data_dir, "/04_donor_metadata_aug.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
 
-prot_file <- str_c(data_dir, "/04_aug_protein_data.csv")
+prot_file <- str_c(data_dir, "/04_protein_data_aug.csv")
 write_csv(x = protein_df,
           file = prot_file)
 
-rna_file <- str_c(data_dir, "/04_aug_rnaseq_data.csv.gz")
+rna_file <- str_c(data_dir, "/04_rnaseq_data_aug.csv.gz")
 write_csv(x = rnaseq_df,
           file = rna_file)
 

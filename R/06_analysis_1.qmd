@@ -3,7 +3,7 @@ title: "06_analysis_1"
 format: html
 ---
 
-## Loading Library
+## Loading Libraries
 
 ```{r}
 #| message: false
@@ -16,6 +16,13 @@ library("ggpubr")
 
 ```{r}
 data_dir <- here("data")
+```
+
+```{r}
+protein_df <- read_csv(str_c(data_dir, "/04_protein_data_aug.csv"))
+
+donor_df <- read_csv(str_c(data_dir, "/04_donor_metadata_aug.csv"))
+
 ```
 
 ```{r}
@@ -42,28 +49,6 @@ Bar plot of sex counts in the 4 groups
 ```
 
 ## 3) Protein Quantification
-
-```{r}
-#| message: false
-protein_df <- read_csv(str_c(data_dir, "/03_protein_data_clean.csv"))
-```
-
-TO BE ADDED IN THE AUGMENTATION
-
-```{r}
-#| message: false
-donor_df <- read_csv(str_c(data_dir, "/04_donor_metadata_aug.csv"))
-
-protein_df <- protein_df |>
-  inner_join((donor_df |>
-                select(donor_id, group_colors)),
-             by = join_by(donor_id)) |>
-  mutate(group_colors = case_when(group_colors == "blue" ~ "AD_noTBI",
-                                  group_colors == "red" ~ "AD_TBI",
-                                  group_colors == "green" ~ "noAD_noTBI",
-                                  TRUE ~ "noAD_TBI")) |>
-  rename(group_label = group_colors)
-```
 
 Pivoting
 

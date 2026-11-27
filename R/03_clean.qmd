@@ -24,7 +24,7 @@ raw_dir <- here("data/_raw")
 a\) Read metadata and handle NA strings
 
 ```{r}
-donor_metadata <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
+donor_metadata <- read.csv(str_c(raw_dir,"/donor_metadata.csv"),
   header = TRUE,
   stringsAsFactors = FALSE,
   na.strings = c("NA", "N/A", "", "Unknown or N/A" ))
@@ -224,12 +224,9 @@ rnaseq_df <- rnaseq_df |>
     by = join_by(donor_id, structure_acronym)
   )
 
-write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
 ```
 
 h\) Save cleaned df
-
-In the end not.
 ```{r}
-write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
+write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_data_clean.csv.gz"))
 ```

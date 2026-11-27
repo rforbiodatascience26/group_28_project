@@ -33,7 +33,7 @@ if (!dir.exists(raw_data_dir)) {
 ```{r}
 #| message: false
 
-metadata_file <- str_c(raw_data_dir, "/donor_metadata_file.csv")
+metadata_file <- str_c(raw_data_dir, "/donor_metadata.csv")
 
 if (!file.exists(metadata_file)){
   url <- "https://aging.brain-map.org/api/v2/data/query.csv?criteria=model::ApiTbiDonorDetail,rma::options[num_rows$eqall]"
