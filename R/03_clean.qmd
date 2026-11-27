@@ -217,15 +217,19 @@ rnaseq_df <- rnaseq_df |>
 g\) Filtering for samples of interest
 
 ```{r}
-rnaseq_df <- 
-rnaseq_df |> 
-  inner_join(protein_clean_df |> 
-               select(donor_id, structure_acronym),
-             by = join_by(donor_id, structure_acronym))
+rnaseq_df <- rnaseq_df |>
+  inner_join(
+    protein_clean_df |>
+      select(donor_id, structure_acronym),
+    by = join_by(donor_id, structure_acronym)
+  )
+
+write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
 ```
 
 h\) Save cleaned df
 
+In the end not.
 ```{r}
 write_csv(rnaseq_df, str_c(data_dir, "/03_rnaseq_clean.csv.gz"))
 ```

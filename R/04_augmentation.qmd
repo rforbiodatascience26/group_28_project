@@ -17,6 +17,8 @@ Data paths:
 data_dir <- here("data")
 ```
 
+
+## Reaing the files
 ## Augment donor metadata
 
 ### Read file
@@ -24,27 +26,73 @@ data_dir <- here("data")
 ```{r}
 donor_metadata <- read.csv(str_c(data_dir,"/03_donor_metadata_clean.csv"))
 
+protein_df <- read.csv(str_c(data_dir,"/clean_protein_data.csv"))
+
+rnaseq_df <- read.csv(str_c(data_dir,"/03_rnaseq_clean.csv.gz"))
+
+rna_metadata <- read.csv(str_c(data_dir,"/_raw/rna_metadata.csv"))
+
 ```
 
-### Read file
+## Augment donor metadata
+
+
+### Generate groups for coloring
 
 ```{r}
 donor_metadata <- donor_metadata |>
   mutate(group_colors=case_when(
-    alzheimer=="yes" & num_tbi_w_loc==0 ~ "blue",
-    alzheimer=="yes" & num_tbi_w_loc!=0 ~ "red",
-    alzheimer=="no" & num_tbi_w_loc==0 ~ "green",
-    alzheimer=="no" & num_tbi_w_loc!=0 ~ "yellow",
+    alzheimer=="yes" & num_tbi_w_loc==0 ~ "AD_noTBI",
+    alzheimer=="yes" & num_tbi_w_loc!=0 ~ "AD_TBI",
+    alzheimer=="no" & num_tbi_w_loc==0 ~ "noAD_noTBI",
+    alzheimer=="no" & num_tbi_w_loc!=0 ~ "noAD_TBI",
   ))
 
 ```
 
-### Write augmented file
+
+
+## Augment protein data:
+
+### Add groups to protein_df
+```{r}
+groups_lookup <- donor_metadata |>  #this lookup table allows to match each donor ID with its group
+  select(donor_id, group_colors) |>
+  distinct()
+
+protein_df <- protein_df |>
+  left_join(groups_lookup, by = "donor_id")
+```
+
+
+## Augment RNA-seq data:
+
+### Add groups to rnaseq_df
+```{r}
+rnaseq_df <- rnaseq_df |>
+  left_join(groups_lookup, by = "donor_id") |>
+  relocate(group_colors, .after = structure_acronym)
+```
+
+
+## Write augmented files
 
 ```{r}
 metadata_file <- str_c(data_dir, "/04_donor_metadata_aug.csv")
 write_csv(x = donor_metadata,
           file = metadata_file)
+
+prot_file <- str_c(data_dir, "/04_aug_protein_data.csv")
+write_csv(x = protein_df,
+          file = prot_file)
+
+rna_file <- str_c(data_dir, "/04_aug_rnaseq_data.csv.gz")
+write_csv(x = rnaseq_df,
+          file = rna_file)
+
 ```
+
+
+
 
 ## Next augmentation:
