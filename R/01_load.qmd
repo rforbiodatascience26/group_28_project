@@ -98,3 +98,25 @@ if (!file.exists(final_rnaseq_file)){
   # removing all the unnecessary files
 }
 ```
+
+
+
+## RNA-seq metadata (Roke)
+```{r}
+#| message: false
+
+rna_metadata_file <- str_c(raw_data_dir, "/rna_metadata.csv")
+
+if (!file.exists(rna_metadata_file)){
+  url <- "https://aging.brain-map.org/data/tbi_data_files.csv"
+  
+  rna_metadata <- read_csv(url)
+  
+  write_csv(x = rna_metadata,
+            file = rna_metadata_file)
+}
+```
+
+
+
+
