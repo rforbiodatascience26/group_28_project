@@ -32,6 +32,7 @@ donor_metadata <- read.csv(str_c(raw_dir,"/donor_metadata_file.csv"),
 b\) mutate age col
 
 ```{r}
+donor_metadata <-
 donor_metadata |>
   mutate(age = map_dbl(.x = age, 
                    ~ str_split(.x, "[-+]",simplify = T) |>
@@ -52,7 +53,8 @@ c\) filtering data (case-control, remove "black")
 
 ```{r}
 #| eval: false
-donor_metadata |> distinct(nincds_arda_diagnosis)
+donor_metadata |> 
+  distinct(nincds_arda_diagnosis)
 ```
 
 ```{r}
@@ -75,7 +77,11 @@ e\) Remove superfluous cols
 
 ```{r}
 donor_metadata <- donor_metadata |> 
-  select(-c(name, control_set, ever_tbi_w_loc, race, hispanic, nincds_arda_diagnosis))
+  select(-c(name, control_set, 
+            ever_tbi_w_loc, race, 
+            hispanic, nincds_arda_diagnosis
+            )
+         )
 ```
 
 f\) Save cleaned df
@@ -126,14 +132,14 @@ a2) Read the gene data
 
 ```{r}
 #| message: false
-genes_data <- read_csv(str_c(raw_dir, "/rows-genes.csv"))
+genes_df <- read_csv(str_c(raw_dir, "/rows-genes.csv"))
 ```
 
 a3) Read the sample data
 
 ```{r}
 #| message: false
-samples_data <- read_csv(str_c(raw_dir, "/columns-samples.csv"))
+samples_df <- read_csv(str_c(raw_dir, "/columns-samples.csv"))
 ```
 
 b\) Transpose df and rename sample id col
@@ -154,7 +160,7 @@ rnaseq_df <- rnaseq_df |>
 c\) Rename gene cols
 
 ```{r}
-names_map <- genes_data |>
+names_map <- genes_df |>
   filter(!is.na(gene_symbol)) |>
   # we must remove NAs to avoid missing names
   mutate(gene_symbol = make.unique(gene_symbol, sep = "_")) |>
@@ -170,11 +176,11 @@ d-e) Add donor_id and structure acronym + Remove rnaseq id
 
 ```{r}
 rnaseq_df <- rnaseq_df |> 
-  inner_join(sample_df |>
+  inner_join(samples_df |>
                select(rnaseq_profile_id, donor_id, structure_acronym),
              by = join_by(rnaseq_profile_id == rnaseq_profile_id)) |>
   # it is not necessary to specify "by", but it makes the join clearer
-  select(-sample_id)
+  select(-rnaseq_profile_id)
 ```
 
 f\) Place the two added col in first position
