@@ -13,9 +13,170 @@ library("tidyverse")
 ## Data Loading
 
 ```{r}
+# Define path to the data folder
+data_dir <- here("data")
 
+# Increase read_csv buffer size
+Sys.setenv("VROOM_CONNECTION_SIZE" = "5000000")
+
+# Load the three augmented datasets
+donor_df   <- read_csv(str_c(data_dir, "/04_donor_metadata_aug.csv"))
+protein_df <- read_csv(str_c(data_dir, "/04_protein_data_aug.csv"))
+rnaseq_df  <- read_csv(str_c(data_dir, "/04_rnaseq_data_aug.csv.gz"))
 ```
 
 ## Data Description
 
-\*Add sample numbers and describe the data cols etc. Use some chunks to show some numbers\*
+After cleaning and filtering in 03_clean , the three final datasets have the following dimensions:
+
+```{r}
+# Summary table comparing total rows, columns, and unique donors across datasets
+tibble(
+  dataset = c("Donor metadata", "Protein data", "RNA-seq data"),
+  total_rows = c(nrow(donor_df), nrow(protein_df), nrow(rnaseq_df)),
+  total_cols = c(ncol(donor_df), ncol(protein_df), ncol(rnaseq_df)),
+  unique_donors = c(
+    n_distinct(donor_df$donor_id),
+    n_distinct(protein_df$donor_id),
+    n_distinct(rnaseq_df$donor_id)
+  )
+)
+```
+
+a\) Donor metadata
+
+```{r}
+# Count total donors per study group
+donor_counts <- donor_df |>
+  count(group_label, name = "number_donors") |>
+  mutate(percentage_donors = round(100 * number_donors / sum(number_donors), 1))  # calculate percentage
+
+# Final row with total count across all groups
+donor_counts |>
+  bind_rows(
+    donor_counts |>
+      summarise(
+        group_label = "Total",
+        number_donors = sum(number_donors),
+        percentage_donors = sum(percentage_donors)
+      )
+  )
+```
+
+Every group represents between 20.4% and 31.2% of the cohort (noAD_noTBI is the largest with 29 donors and AD_TBI is the smallest with 19).
+
+```{r}
+# Summarize key demographic, genetic, and neuropathology variables per group
+donor_df |>
+  group_by(group_label) |>
+  summarise(
+    number_donors = n(),
+    number_female = sum(sex == "F", na.rm = TRUE),
+    number_male = sum(sex == "M", na.rm = TRUE),
+    mean_age = round(mean(age, na.rm = TRUE), 1),
+    median_edu_yrs = median(education_years, na.rm = TRUE),
+    percentage_apoe4_pos = round(100 * mean(apo_e4_allele == "Y", na.rm = TRUE), 1),
+    median_braak = median(braak, na.rm = TRUE),
+    median_cerad = median(cerad, na.rm = TRUE),
+    median_nia_reagan = median(nia_reagan, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+# Check the number and percentage of NAs in each column
+donor_df |>
+  summarise(across(everything(), ~ sum(is.na(.x)))) |>
+  pivot_longer(
+    cols = everything(),
+    names_to = "column",
+    values_to = "number_na"
+  ) |>
+  mutate(percentage_na = round(100 * number_na / nrow(donor_df), 1)) |>
+  arrange(desc(number_na))
+```
+
+b\) Protein data
+
+```{r}
+# Count protein tissue samples by study group and brain region
+protein_counts <- protein_df |>
+  count(group_label, structure_acronym) |>
+  pivot_wider(
+    names_from = structure_acronym,
+    values_from = n,
+    values_fill = 0
+  ) |>
+  mutate(total = FWM + HIP)
+
+# Add a final row showing total samples for FWM, HIP, and all
+protein_counts |>
+  bind_rows(
+    protein_counts |>
+      summarise(
+        group_label = "Total",
+        FWM = sum(FWM),
+        HIP = sum(HIP),
+        total = sum(total)
+      )
+  )
+```
+
+```{r}
+# Surviving protein columns and remaining NAs
+protein_df |>
+  select(-c(donor_id, structure_acronym, group_label)) |>
+  summarise(across(everything(), ~ sum(is.na(.x)))) |>
+  pivot_longer(
+    cols = everything(),
+    names_to = "protein",
+    values_to = "number_na"
+  ) |>
+  mutate(percentage_na = round(100 * number_na / nrow(protein_df), 1)) |>
+  arrange(desc(number_na))
+```
+
+c\) RNA-seq data
+
+```{r}
+# Count RNA-seq tissue samples by study group and brain region (FWM vs HIP)
+rnaseq_counts <- rnaseq_df |>
+  count(group_label, structure_acronym) |>
+  pivot_wider(
+    names_from = structure_acronym,
+    values_from = n,
+    values_fill = 0
+  ) |>
+  mutate(total = FWM + HIP)
+
+# Add a final row showing total samples for FWM, HIP, and overall
+rnaseq_counts |>
+  bind_rows(
+    rnaseq_counts |>
+      summarise(
+        group_label = "Total",
+        FWM = sum(FWM),
+        HIP = sum(HIP),
+        total = sum(total)
+      )
+  )
+```
+
+```{r}
+# Summarize gene count and check for any NAs in the RNA-seq dataset
+tibble(
+  total_samples = nrow(rnaseq_df),
+  total_cols = ncol(rnaseq_df),
+  n_genes = ncol(rnaseq_df) - 3, # excluding donor_id, structure_acronym and group_label
+  total_na = sum(is.na(rnaseq_df))
+)
+```
+
+```{r}
+# View the first 6 columns
+glimpse(rnaseq_df[, 1:6])
+```
+
+The preview confirms that rnaseq_df has 149 tissue-sample rows, starting with the three sample identifiers (donor_id, structure_acronym, and group_label), where the same donor can appear twice if both HIP and FWM samples are present.
+
+The remaining columns contain numeric (dbl) normalized FPKM expression values, including many zeros as expected for lowly expressed or unexpressed genes.
